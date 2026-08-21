@@ -4,7 +4,11 @@ import { join, relative } from 'node:path'
 import { PLACEHOLDER_LIST } from '@/lib/placeholders'
 
 const ROOT = process.cwd()
-const SCAN_DIRS = ['lib', 'app', 'components', 'scripts']
+// public/ сегодня не даёт ни одного попадания (.ttf и .md не в SCAN_EXT),
+// но завтра поймает site.webmanifest или browserconfig.xml с названием компании.
+// .claude/ сюда НЕ добавлять: скил deploy намеренно приводит example.kz
+// как пример в инструкции, и guard от этого никогда не позеленеет.
+const SCAN_DIRS = ['lib', 'app', 'components', 'scripts', 'public']
 const SCAN_EXT = ['.ts', '.tsx', '.mjs', '.css', '.json', '.txt', '.xml', '.webmanifest']
 
 /**

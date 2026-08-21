@@ -2,10 +2,12 @@ import { defineConfig } from 'vitest/config'
 import { fileURLToPath } from 'node:url'
 
 export default defineConfig({
-  // tsconfig держит jsx: 'preserve' — этого требует Next. Vite читает ту же
-  // настройку и оставляет JSX как есть, из-за чего .tsx не парсится в тестах
-  // (например tests/json-ld.test.ts импортирует компонент). Переопределяем
-  // только для vitest. Внимание: esbuild: { jsx: 'automatic' } здесь НЕ работает.
+  // Vite берёт режим JSX из tsconfig.json. Сейчас там "jsx": "react-jsx",
+  // и с ним .tsx парсится и без этой строки. Но стоит вернуть в tsconfig
+  // "preserve" (его советует часть документации Next) — и любой тест,
+  // импортирующий .tsx, падает с «Unexpected JSX expression» ещё на разборе
+  // файла. Строка ниже прибивает автоматический JSX-рантайм для vitest
+  // независимо от tsconfig. Внимание: esbuild: { jsx: 'automatic' } здесь НЕ работает.
   oxc: { jsx: { runtime: 'automatic' } },
 
   test: { environment: 'node', include: ['tests/**/*.test.ts'] },
