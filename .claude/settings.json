@@ -14,7 +14,6 @@
       "Bash(pnpm remove:*)",
       "Bash(pnpm dlx shadcn@*)",
       "Bash(pnpm dlx shadcn *)",
-      "Bash(pnpm dlx knip@*)",
       "Bash(node scripts/*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
