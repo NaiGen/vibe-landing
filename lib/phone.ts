@@ -17,7 +17,7 @@ export function maskKzPhone(input: string): string {
   const parts = [
     '+7',
     d.length > 1 ? ` (${d.slice(1, 4)}` : '',
-    d.length >= 4 ? ')' : '',
+    d.length > 4 ? ')' : '',
     d.length > 4 ? ` ${d.slice(4, 7)}` : '',
     d.length > 7 ? `-${d.slice(7, 9)}` : '',
     d.length > 9 ? `-${d.slice(9, 11)}` : '',
