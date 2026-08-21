@@ -43,14 +43,24 @@ rl.close()
 const original = readFileSync('lib/site.ts', 'utf8')
 let site = original
 
-if (answers.name) site = site.replaceAll(PLACEHOLDER.name, answers.name)
-if (answers.legalName) site = site.replaceAll(PLACEHOLDER.legalName, answers.legalName)
-if (answers.bin) site = site.replaceAll(PLACEHOLDER.bin, answers.bin)
+/**
+ * Ответ уходит внутрь TS-строки в одинарных кавычках. Апостроф в названии
+ * («D'Art Studio», «O'Key») и обратный слеш иначе рвут литерал, и ученик
+ * получает стену ошибок tsc раньше, чем первый экран сайта.
+ *
+ * Замена функцией, а не строкой: в строке замены `$&` и `$'` — управляющие
+ * последовательности replaceAll, функция их отключает.
+ */
+const toTsLiteral = (value) => () => value.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+
+if (answers.name) site = site.replaceAll(PLACEHOLDER.name, toTsLiteral(answers.name))
+if (answers.legalName) site = site.replaceAll(PLACEHOLDER.legalName, toTsLiteral(answers.legalName))
+if (answers.bin) site = site.replaceAll(PLACEHOLDER.bin, toTsLiteral(answers.bin))
 
 let domain = ''
 if (answers.domain) {
   domain = answers.domain.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/+$/, '')
-  site = site.replaceAll(PLACEHOLDER.domain, domain)
+  site = site.replaceAll(PLACEHOLDER.domain, toTsLiteral(domain))
 }
 
 if (answers.phone) {
