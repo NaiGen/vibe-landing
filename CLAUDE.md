@@ -59,6 +59,7 @@
 - `pnpm dev` — разработка
 - `pnpm lint` — проверка типов (`tsc --noEmit`)
 - `pnpm test` — тесты и guard заглушек
+- `pnpm test:unit` — тесты без guard-теста (когда `site.ts` ещё не заполнен)
 - `pnpm check-brief` — что осталось заполнить в брифе
 - `pnpm build` — сборка
 
