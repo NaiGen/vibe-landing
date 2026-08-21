@@ -1,7 +1,15 @@
+import type { Metadata } from 'next'
 import { readBriefProgress } from '@/lib/brief'
-import { PLACEHOLDER } from '@/lib/placeholders'
+import { PLACEHOLDER_LIST } from '@/lib/placeholders'
+import { absoluteUrl } from '@/lib/seo'
 import { SITE } from '@/lib/site'
 import { TestLeadButton } from '@/components/lead/test-lead-button'
+
+// Канонический адрес объявляет каждая страница сама: в корневом layout
+// его нет, иначе адрес главной унаследовали бы все остальные страницы.
+export const metadata: Metadata = {
+  alternates: { canonical: absoluteUrl('/') },
+}
 
 /**
  * Стартовая страница шаблона. Показывает, что осталось заполнить.
@@ -12,11 +20,20 @@ export default function Page() {
   const filled = sections.reduce((sum, section) => sum + section.filled.length, 0)
   const total = sections.reduce((sum, section) => sum + section.filled.length + section.empty.length, 0)
 
-  // Приведение к string обязательно: SITE закрыт `as const`, поля имеют
-  // литеральные типы, и сравнение без него — ошибка TS2367 «типы не пересекаются»
+  // Панель обязана быть строже guard-теста, а не мягче: сверяем ВСЕ шесть
+  // заглушек, иначе она напишет «заполнен» при красном `pnpm test`.
+  // Аннотация `string[]` обязательна: SITE закрыт `as const`, поля имеют
+  // литеральные типы, и без расширения сравнение со строкой — ошибка TS2367
   // ровно с того момента, как ученик заполнит site.ts.
-  const siteReady =
-    (SITE.domain as string) !== PLACEHOLDER.domain && (SITE.name as string) !== PLACEHOLDER.name
+  const siteValues: string[] = [
+    SITE.domain,
+    SITE.primaryPhone.display,
+    SITE.whatsapp.number,
+    SITE.bin,
+    SITE.name,
+    SITE.legalName,
+  ]
+  const leftInSite = PLACEHOLDER_LIST.filter((placeholder) => siteValues.includes(placeholder.value))
 
   return (
     <main>
@@ -38,8 +55,10 @@ export default function Page() {
       <section>
         <h2>2. Перенеси данные в проект</h2>
         <p>
-          {siteReady ? '✅' : '⬜'} <code>lib/site.ts</code>{' '}
-          {siteReady ? 'заполнен' : 'ещё содержит заглушки'}
+          {leftInSite.length === 0 ? '✅' : '⬜'} <code>lib/site.ts</code>{' '}
+          {leftInSite.length === 0
+            ? 'заполнен'
+            : `— осталось заменить: ${leftInSite.map((placeholder) => placeholder.hint).join(', ')}`}
         </p>
         <p>Скажи Claude: <code>/brand-init</code> — он прочитает бриф и заполнит файл сам.</p>
         <p>Проверить: <code>pnpm test</code></p>
