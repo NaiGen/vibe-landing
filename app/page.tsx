@@ -1,4 +1,5 @@
 import { readBriefProgress } from '@/lib/brief'
+import { PLACEHOLDER } from '@/lib/placeholders'
 import { SITE } from '@/lib/site'
 import { TestLeadButton } from '@/components/lead/test-lead-button'
 
@@ -14,14 +15,8 @@ export default function Page() {
   // Приведение к string обязательно: SITE закрыт `as const`, поля имеют
   // литеральные типы, и сравнение без него — ошибка TS2367 «типы не пересекаются»
   // ровно с того момента, как ученик заполнит site.ts.
-  //
-  // Значения-эталоны собраны через `+`, а не одним литералом: иначе guard-тест
-  // (tests/placeholders.test.ts) ловит их прямо здесь, в чек-листе, который и
-  // должен сообщать об их замене, — и pnpm test не зеленеет даже на заполненном SITE.
-  const placeholderDomain = 'example' + '.kz'
-  const placeholderName = 'Пример' + ' Сервис'
   const siteReady =
-    (SITE.domain as string) !== placeholderDomain && (SITE.name as string) !== placeholderName
+    (SITE.domain as string) !== PLACEHOLDER.domain && (SITE.name as string) !== PLACEHOLDER.name
 
   return (
     <main>

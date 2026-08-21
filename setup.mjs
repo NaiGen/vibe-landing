@@ -2,20 +2,34 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { createInterface } from 'node:readline/promises'
 import { stdin, stdout } from 'node:process'
+import { PLACEHOLDER } from './lib/placeholders.ts'
+import { formatKzPhoneDisplay, normalizeKzPhone } from './lib/phone.ts'
 
 /**
  * Первичная настройка. Делает то же, что сделала бы модель,
  * но детерминированно и бесплатно.
  */
 
+// На не-интерактивном вводе (пайп, скрипт, запуск моделью) rl.question()
+// зависает намертво после первого вопроса: на non-TTY потоке readline
+// эмитит все строки сразу, а не по мере вызовов question(), и хвост
+// вопросов не получает ответа. Лучше явно отказаться, чем сжечь лимиты
+// в бесконечном ожидании.
+if (!stdin.isTTY) {
+  console.log('\nЭтот скрипт нужно запускать руками в терминале — он ждёт ответы по одному.')
+  console.log('Через пайп или из скрипта (в том числе от имени Claude) он зависнет.')
+  console.log('Альтернатива: заполни lib/site.ts напрямую, без pnpm setup.\n')
+  process.exit(1)
+}
+
 const rl = createInterface({ input: stdin, output: stdout })
 
 const questions = [
-  { key: 'name', text: 'Название компании', placeholder: 'Пример Сервис' },
-  { key: 'legalName', text: 'Юридическое лицо (например ТОО «Ромашка»)', placeholder: 'ТОО «Пример»' },
-  { key: 'bin', text: 'БИН / ИИН', placeholder: '000000000000' },
-  { key: 'domain', text: 'Домен без https:// и без www (например romashka.kz)', placeholder: 'example.kz' },
-  { key: 'phone', text: 'Телефон в формате +7 700 123 45 67', placeholder: '+7 700 000 00 00' },
+  { key: 'name', text: 'Название компании', placeholder: PLACEHOLDER.name },
+  { key: 'legalName', text: 'Юридическое лицо (например ТОО «Ромашка»)', placeholder: PLACEHOLDER.legalName },
+  { key: 'bin', text: 'БИН / ИИН', placeholder: PLACEHOLDER.bin },
+  { key: 'domain', text: 'Домен без https:// и без www (например romashka.kz)', placeholder: PLACEHOLDER.domain },
+  { key: 'phone', text: 'Телефон в формате +7 700 123 45 67', placeholder: PLACEHOLDER.phoneDisplay },
 ]
 
 console.log('\nНастройка проекта. Пустой ответ оставит заглушку.\n')
@@ -26,28 +40,44 @@ for (const question of questions) {
 }
 rl.close()
 
-let site = readFileSync('lib/site.ts', 'utf8')
+const original = readFileSync('lib/site.ts', 'utf8')
+let site = original
 
-if (answers.name) site = site.replaceAll('Пример Сервис', answers.name)
-if (answers.legalName) site = site.replaceAll('ТОО «Пример»', answers.legalName)
-if (answers.bin) site = site.replaceAll('000000000000', answers.bin)
+if (answers.name) site = site.replaceAll(PLACEHOLDER.name, answers.name)
+if (answers.legalName) site = site.replaceAll(PLACEHOLDER.legalName, answers.legalName)
+if (answers.bin) site = site.replaceAll(PLACEHOLDER.bin, answers.bin)
 
+let domain = ''
 if (answers.domain) {
-  const domain = answers.domain.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/+$/, '')
-  site = site.replaceAll('example.kz', domain)
+  domain = answers.domain.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/+$/, '')
+  site = site.replaceAll(PLACEHOLDER.domain, domain)
 }
 
 if (answers.phone) {
-  const raw = `+${answers.phone.replace(/\D/g, '').replace(/^8/, '7')}`
-  site = site.replaceAll('+7 700 000 00 00', answers.phone).replaceAll('+77000000000', raw)
-  site = site.replaceAll("number: '77000000000'", `number: '${raw.slice(1)}'`)
+  const display = formatKzPhoneDisplay(answers.phone)
+  const raw = normalizeKzPhone(answers.phone)
+
+  if (display && raw) {
+    site = site.replaceAll(PLACEHOLDER.phoneDisplay, display).replaceAll(`+${PLACEHOLDER.whatsapp}`, raw)
+    site = site.replaceAll(`number: '${PLACEHOLDER.whatsapp}'`, `number: '${raw.slice(1)}'`)
+  } else {
+    console.log('\n⚠️  Не разобрал номер как казахстанский — телефон в lib/site.ts не тронут, поправь вручную.\n')
+  }
 }
 
-writeFileSync('lib/site.ts', site)
+if (site !== original) writeFileSync('lib/site.ts', site)
 
 const pkg = JSON.parse(readFileSync('package.json', 'utf8'))
-if (answers.domain) pkg.name = answers.domain.replace(/\./g, '-')
-writeFileSync('package.json', `${JSON.stringify(pkg, null, 2)}\n`)
+const packageName = domain
+  .toLowerCase()
+  .replace(/[^a-z0-9-]/g, '-')
+  .replace(/-+/g, '-')
+  .replace(/^-+|-+$/g, '')
+
+if (packageName && pkg.name !== packageName) {
+  pkg.name = packageName
+  writeFileSync('package.json', `${JSON.stringify(pkg, null, 2)}\n`)
+}
 
 console.log('\n✅ lib/site.ts заполнен. Дальше:')
 console.log('   pnpm test        — проверить, что заглушек не осталось')

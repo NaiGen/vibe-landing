@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { maskKzPhone, normalizeKzPhone } from '@/lib/phone'
+import { formatKzPhoneDisplay, maskKzPhone, normalizeKzPhone } from '@/lib/phone'
 
 describe('maskKzPhone', () => {
   it('форматирует по мере ввода', () => {
@@ -48,5 +48,19 @@ describe('normalizeKzPhone', () => {
 
   it('отвергает не казахстанский код', () => {
     expect(normalizeKzPhone('+1 202 555 0100')).toBeNull()
+  })
+})
+
+describe('formatKzPhoneDisplay', () => {
+  it('форматирует ввод с ведущей 8', () => {
+    expect(formatKzPhoneDisplay('87051234567')).toBe('+7 705 123 45 67')
+  })
+
+  it('форматирует ввод с +7 и пробелами', () => {
+    expect(formatKzPhoneDisplay('+7 705 123 45 67')).toBe('+7 705 123 45 67')
+  })
+
+  it('отвергает слишком короткий ввод', () => {
+    expect(formatKzPhoneDisplay('7705123')).toBeNull()
   })
 })

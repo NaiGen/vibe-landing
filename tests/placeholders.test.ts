@@ -1,20 +1,20 @@
 import { describe, expect, it } from 'vitest'
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
+import { PLACEHOLDER_LIST } from '@/lib/placeholders'
 
 const ROOT = process.cwd()
 const SCAN_DIRS = ['lib', 'app', 'components', 'scripts']
 const SCAN_EXT = ['.ts', '.tsx', '.mjs', '.css', '.json', '.txt', '.xml', '.webmanifest']
 
-/** Заглушки шаблона. Пока хоть одна на месте — сайт не готов к запуску. */
-const PLACEHOLDERS: Array<{ value: string; hint: string }> = [
-  { value: 'example.kz', hint: 'домен' },
-  { value: '+7 700 000 00 00', hint: 'телефон' },
-  { value: '77000000000', hint: 'телефон для WhatsApp/tel:' },
-  { value: '000000000000', hint: 'БИН' },
-  { value: 'Пример Сервис', hint: 'название компании' },
-  { value: 'ТОО «Пример»', hint: 'юридическое лицо' },
-]
+/**
+ * lib/placeholders.ts не сканируем на тех же основаниях, на которых не
+ * сканируем tests/: файл не употребляет заглушки, а определяет их — он и есть
+ * источник значений из PLACEHOLDER_LIST ниже. Явный список путей, а не фильтр
+ * по расширению или директории — чтобы исключение не расползлось молча
+ * на файлы, которые появятся в lib/ позже.
+ */
+const EXCLUDE_FILES = ['lib/placeholders.ts']
 
 function walk(dir: string): string[] {
   const abs = join(ROOT, dir)
@@ -32,13 +32,13 @@ function walk(dir: string): string[] {
 }
 
 describe('заглушки шаблона заменены', () => {
-  const files = SCAN_DIRS.flatMap(walk)
+  const files = SCAN_DIRS.flatMap(walk).filter((file) => !EXCLUDE_FILES.includes(relative(ROOT, file)))
 
   it('находит файлы для проверки', () => {
     expect(files.length).toBeGreaterThan(0)
   })
 
-  for (const { value, hint } of PLACEHOLDERS) {
+  for (const { value, hint } of PLACEHOLDER_LIST) {
     it(`заменён ${hint} (${value})`, () => {
       const hits = files
         .map((file) => {
