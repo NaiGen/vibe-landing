@@ -17,6 +17,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true })
   }
 
+  const parsed = leadSchema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json(
+      { ok: false, error: parsed.error.issues[0]?.message ?? 'Проверьте поля формы' },
+      { status: 400 },
+    )
+  }
+
+  // Лимит считает только состоявшиеся заявки и потому стоит ПОСЛЕ проверки.
+  // Стоял бы раньше — мусорные тела съедали бы квоту, и человек с корректной
+  // заявкой получал бы «слишком много заявок», не отправив ни одной.
   const ip =
     request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
     request.headers.get('x-real-ip') ??
@@ -24,14 +35,6 @@ export async function POST(request: Request) {
 
   if (!checkRateLimit(ip)) {
     return NextResponse.json({ ok: false, error: 'Слишком много заявок. Попробуйте через минуту.' }, { status: 429 })
-  }
-
-  const parsed = leadSchema.safeParse(body)
-  if (!parsed.success) {
-    return NextResponse.json(
-      { ok: false, error: parsed.error.issues[0]?.message ?? 'Проверьте поля формы' },
-      { status: 400 },
-    )
   }
 
   try {
