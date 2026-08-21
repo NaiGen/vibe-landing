@@ -1,10 +1,10 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { SITE } from '@/lib/site'
-import { absoluteUrl } from '@/lib/seo'
+import { pageMeta } from '@/lib/seo'
 
 export const metadata: Metadata = {
-  alternates: { canonical: absoluteUrl('/spasibo') },
+  ...pageMeta('/spasibo'),
   title: 'Заявка отправлена',
   // Страница благодарности не должна попадать в поиск:
   // человек может зайти на неё мимо формы и решить, что заявка ушла.

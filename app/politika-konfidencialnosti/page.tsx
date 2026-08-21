@@ -1,9 +1,9 @@
 import type { Metadata } from 'next'
 import { SITE } from '@/lib/site'
-import { absoluteUrl } from '@/lib/seo'
+import { pageMeta } from '@/lib/seo'
 
 export const metadata: Metadata = {
-  alternates: { canonical: absoluteUrl('/politika-konfidencialnosti') },
+  ...pageMeta('/politika-konfidencialnosti'),
   title: 'Политика конфиденциальности',
   robots: { index: false, follow: true },
 }

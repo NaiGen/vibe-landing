@@ -1,15 +1,13 @@
 import type { Metadata } from 'next'
 import { readBriefProgress } from '@/lib/brief'
 import { PLACEHOLDER_LIST } from '@/lib/placeholders'
-import { absoluteUrl } from '@/lib/seo'
+import { pageMeta } from '@/lib/seo'
 import { SITE } from '@/lib/site'
 import { TestLeadButton } from '@/components/lead/test-lead-button'
 
-// Канонический адрес объявляет каждая страница сама: в корневом layout
-// его нет, иначе адрес главной унаследовали бы все остальные страницы.
-export const metadata: Metadata = {
-  alternates: { canonical: absoluteUrl('/') },
-}
+// canonical и og:url этой страницы. См. pageMeta в lib/seo.ts —
+// в корневом layout адреса нет намеренно.
+export const metadata: Metadata = pageMeta('/')
 
 /**
  * Стартовая страница шаблона. Показывает, что осталось заполнить.

@@ -11,10 +11,11 @@ import { SiteAnalytics } from '@/components/analytics/site-analytics'
 import { JsonLd } from '@/components/seo/json-ld'
 
 /**
- * Общая метадата всех страниц. Здесь НЕТ canonical и og:url:
- * корневой layout наследуется каждой страницей, и адрес главной
- * молча проставился бы всем остальным. Свой canonical
- * страница объявляет сама — см. app/page.tsx.
+ * Общая метадата всех страниц. Здесь НЕТ ни canonical, ни openGraph.url:
+ * корневой layout наследуется каждой страницей, и адрес главной молча
+ * проставился бы всем остальным. Свой адрес — и в canonical, и в og:url —
+ * страница объявляет сама, см. app/page.tsx. Остальной openGraph общий,
+ * его наследовать как раз правильно.
  */
 export const metadata: Metadata = {
   metadataBase: new URL(SITE.url),
