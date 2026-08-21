@@ -26,17 +26,29 @@ export function absoluteUrl(path: string): string {
  * заменяет layout'овский целиком. Объяви страница один только url —
  * og:site_name, og:locale и og:type пропадут из её HTML.
  *
- * По той же причине страница с pageMeta не наследует общую картинку
- * из app/opengraph-image.tsx: она подмешивается только туда, где свой
+ * По той же причине картинку превью приходится подставлять руками:
+ * общая из app/opengraph-image.tsx подмешивается только туда, где свой
  * openGraph не объявлен (resolve-metadata.js, mergeStaticMetadata).
- * Главной это не мешает — файл лежит в её сегменте. Нужна картинка
- * на другой странице — см. скил new-page, шаг 3.
+ * Исключение — главная: файл лежит в её сегменте, и если НЕ задавать ей
+ * images, Next соберёт картинку сам, со всеми размерами, alt, типом
+ * и хешем для сброса кэша соцсетей. Поэтому корень получает картинку
+ * автоматически, а все остальные пути — тот же адрес явной строкой.
+ * Хеша в нём нет намеренно: картинка на всём сайте одна, и кэш её
+ * как раз должен переиспользовать.
  */
 export function pageMeta(path: string): Metadata {
   const url = absoluteUrl(path)
+  const isHome = url === absoluteUrl('/')
+
   return {
     alternates: { canonical: url },
-    openGraph: { type: 'website', locale: SITE.locale, siteName: SITE.name, url },
+    openGraph: {
+      type: 'website',
+      locale: SITE.locale,
+      siteName: SITE.name,
+      url,
+      ...(isHome ? {} : { images: [absoluteUrl('/opengraph-image')] }),
+    },
   }
 }
 
