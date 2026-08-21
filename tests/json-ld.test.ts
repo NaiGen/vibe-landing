@@ -25,6 +25,14 @@ describe('buildGraph', () => {
     const hasAddress = Boolean(SITE.address.full && SITE.address.city)
     expect(types.includes('LocalBusiness')).toBe(hasAddress)
   })
+
+  it('не выдумывает пустое поле sameAs при отсутствии соцсетей', () => {
+    const hasSocials = Object.values(SITE.socials).some(Boolean)
+    const graphJson = JSON.stringify(graph)
+    if (!hasSocials) {
+      expect(graphJson).not.toContain('"sameAs":[]')
+    }
+  })
 })
 
 describe('faqGraph', () => {

@@ -1,5 +1,4 @@
 import { SITE } from '@/lib/site'
-import { absoluteUrl } from '@/lib/seo'
 
 /**
  * Разметка для поисковиков, собранная из lib/site.ts.
@@ -14,6 +13,9 @@ export function buildGraph(): Record<string, unknown> {
   const organizationId = `${SITE.url}#organization`
   const nodes: Array<Record<string, unknown>> = []
 
+  const sameAsArray = Object.values(SITE.socials).filter(Boolean)
+  const sameAs = sameAsArray.length > 0 ? sameAsArray : undefined
+
   nodes.push({
     '@type': 'Organization',
     '@id': organizationId,
@@ -22,7 +24,7 @@ export function buildGraph(): Record<string, unknown> {
     url: SITE.url,
     telephone: SITE.primaryPhone.raw,
     email: SITE.email || undefined,
-    sameAs: Object.values(SITE.socials).filter(Boolean),
+    sameAs,
   })
 
   // LocalBusiness добавляем только когда адрес действительно заполнен —
