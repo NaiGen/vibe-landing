@@ -1,0 +1,32 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+/* Значения токенов. Меняешь цвет здесь — меняется весь сайт. */
+:root {
+  --background: #ffffff;
+  --foreground: #0f1720;
+  --border: #e5e7eb;
+  --ring: #94a3b8;
+}
+
+/* Регистрация токенов в Tailwind. Без этой секции классов
+   bg-background, text-foreground, border-border, outline-ring
+   не существует и сборка падает с «Cannot apply unknown utility class».
+
+   Свой токен добавляешь парой строк: значение в :root выше
+   и --color-<имя> здесь.
+
+   :root         { --brand: #15b65c; }
+   @theme inline { --color-brand: var(--brand); }
+*/
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+}
+
+@layer base {
+  * { @apply border-border outline-ring/50; }
+  body { @apply bg-background text-foreground; }
+}
