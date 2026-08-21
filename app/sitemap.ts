@@ -4,8 +4,11 @@ import { absoluteUrl, isIndexable, LAST_UPDATED } from '@/lib/seo'
 export default function sitemap(): MetadataRoute.Sitemap {
   if (!isIndexable()) return []
 
-  // Добавляя страницу, добавь её сюда. Скил /new-page делает это сам.
-  const paths = ['/', '/politika-konfidencialnosti', '/publichnaya-oferta']
+  // Добавляя ИНДЕКСИРУЕМУЮ страницу, добавь её сюда. Скил /new-page делает это сам.
+  // Страницам с `robots: { index: false }` здесь не место: Search Console
+  // ответит на них ошибкой «Отправленный URL содержит тег noindex».
+  // Поэтому политики, оферты и /spasibo в списке нет.
+  const paths = ['/']
 
   return paths.map((path) => ({
     url: absoluteUrl(path),

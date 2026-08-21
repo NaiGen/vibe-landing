@@ -1,7 +1,9 @@
 import type { Metadata } from 'next'
 import { SITE } from '@/lib/site'
+import { absoluteUrl } from '@/lib/seo'
 
 export const metadata: Metadata = {
+  alternates: { canonical: absoluteUrl('/publichnaya-oferta') },
   title: 'Публичная оферта',
   robots: { index: false, follow: true },
 }

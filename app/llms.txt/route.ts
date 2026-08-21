@@ -7,8 +7,9 @@ export function GET() {
 
   const body = [
     `# ${SITE.name}`,
-    ``,
-    SITE.description,
+    // Пустое описание не выводим вовсе: иначе на его месте
+    // остаются две пустые строки подряд.
+    ...(SITE.description ? [``, SITE.description] : []),
     ``,
     `## Контакты`,
     `- Телефон: ${SITE.primaryPhone.display}`,

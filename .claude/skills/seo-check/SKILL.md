@@ -13,8 +13,10 @@ description: Проверить сайт перед публикацией — �
 4. `SITE.indexable` — `'public'` для обычного сайта, `'ads-only'`
    для лендинга под рекламу. `'private'` в проде почти всегда ошибка.
 5. `curl -s localhost:3000/robots.txt` — соответствует режиму?
-6. `curl -s localhost:3000/sitemap.xml` — есть все страницы из `app/`?
-   Каждая страница в `app/` должна быть в `sitemap.ts`.
+6. `curl -s localhost:3000/sitemap.xml` — в нём каждая **индексируемая**
+   страница? Страницам с `robots: { index: false }` (политика, оферта,
+   `/spasibo`) в sitemap не место: Search Console ответит на них ошибкой
+   «Отправленный URL содержит тег noindex».
 7. У каждой страницы уникальные `title` и `description`? Найди дубли.
 8. `title` до 60 символов, `description` 120–160?
 9. Ровно один `<h1>` на страницу?
