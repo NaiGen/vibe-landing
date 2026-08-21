@@ -7,6 +7,7 @@ import { Toaster } from '@/components/ui/sonner'
 import { LeadModal } from '@/components/lead/lead-modal'
 import { StickyCta } from '@/components/layout/sticky-cta'
 import { ClickTracker } from '@/components/analytics/click-tracker'
+import { SiteAnalytics } from '@/components/analytics/site-analytics'
 import { JsonLd } from '@/components/seo/json-ld'
 
 export const metadata: Metadata = {
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <StickyCta />
         <LeadModal />
         <ClickTracker />
+        <SiteAnalytics />
         <Toaster />
       </body>
     </html>
