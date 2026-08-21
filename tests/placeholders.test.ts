@@ -4,8 +4,10 @@ import { join, relative } from 'node:path'
 import { PLACEHOLDER_LIST } from '@/lib/placeholders'
 
 const ROOT = process.cwd()
-// public/ сегодня не даёт ни одного попадания (.ttf и .md не в SCAN_EXT),
-// но завтра поймает site.webmanifest или browserconfig.xml с названием компании.
+// public/ сегодня попаданий не даёт: og.ttf и README.md не подходят
+// под SCAN_EXT, а OFL.txt (.txt в списке есть) сканируется и заглушек
+// не содержит. Каталог здесь ради завтрашних site.webmanifest
+// и browserconfig.xml с названием компании.
 // .claude/ сюда НЕ добавлять: скил deploy намеренно приводит example.kz
 // как пример в инструкции, и guard от этого никогда не позеленеет.
 const SCAN_DIRS = ['lib', 'app', 'components', 'scripts', 'public']

@@ -59,7 +59,15 @@ if (answers.bin) site = site.replaceAll(PLACEHOLDER.bin, toTsLiteral(answers.bin
 
 let domain = ''
 if (answers.domain) {
-  domain = answers.domain.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/+$/, '')
+  // Нижний регистр — первым делом. Домены регистронезависимы, Romashka.KZ
+  // и romashka.kz — один адрес, и в конфиг должен попадать один вид.
+  // Без этого ответ «HTTPS://WWW.Romashka.KZ/» не подходил под шаблоны ниже
+  // и уезжал в SITE.url целиком: url: 'https://HTTPS://WWW.Romashka.KZ'.
+  domain = answers.domain
+    .toLowerCase()
+    .replace(/^https?:\/\//, '')
+    .replace(/^www\./, '')
+    .replace(/\/+$/, '')
   site = site.replaceAll(PLACEHOLDER.domain, toTsLiteral(domain))
 }
 

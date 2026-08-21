@@ -16,6 +16,8 @@ const RULE_CELL = /^[\s:-]+$/
 const LIST_ITEM = /^(\d+)\.\s*(.*)$/
 /** Поле внутри пункта списка: `1. **Вопрос:** текст`. */
 const ITEM_FIELD = /^\*\*(.+?):\*\*\s*(.*)$/
+/** Продолжение пункта с отступом и без дефиса: `   **Ответ:**`. */
+const NESTED_FIELD = /^\s+\*\*(.+?):\*\*\s*(.*)$/
 
 /**
  * Считает не только поля `- **Название:**`, но и содержимое таблиц
@@ -23,12 +25,20 @@ const ITEM_FIELD = /^\*\*(.+?):\*\*\s*(.*)$/
  * отзывы, кейсы) лежит именно в них. Считались бы одни поля — раздел
  * «Контент» закрывался бы одной строкой при пустом по существу брифе,
  * а `/new-section` потом переспрашивал бы то, что должно быть в файле.
+ *
+ * Вопрос и ответ FAQ — ДВЕ разные единицы: `1. **Вопрос:**` и строка
+ * `   **Ответ:**` под ним считаются по отдельности. Иначе бриф с вопросами
+ * и пустыми ответами показывал бы «готово», а `/new-section` пришёл бы
+ * за ответами, не нашёл их и начал выдумывать — при том что правило
+ * проекта требует держать ответы FAQ прямо в HTML.
  */
 export function parseBrief(text: string): BriefSection[] {
   const sections: BriefSection[] = []
   let current: BriefSection | null = null
   /** Имя ближайшей подводки — им называются строки таблиц и пункты списков. */
   let label = ''
+  /** Имя последнего пункта списка — к нему привязываются строки-продолжения. */
+  let lastItem = ''
   /** `head` — шапка таблицы ещё не закрыта разделителем, `body` — уже. */
   let table: { name: string; stage: 'head' | 'body'; rows: number } | null = null
 
@@ -58,6 +68,7 @@ export function parseBrief(text: string): BriefSection[] {
       current = { name: heading[1].trim(), filled: [], empty: [] }
       sections.push(current)
       label = ''
+      lastItem = ''
       continue
     }
 
@@ -83,18 +94,30 @@ export function parseBrief(text: string): BriefSection[] {
     const field = line.match(FIELD)
     if (field) {
       add(field[1], field[2])
+      lastItem = ''
       continue
     }
 
     const item = line.match(LIST_ITEM)
     if (item) {
+      lastItem = named(item[1])
       const inner = item[2].match(ITEM_FIELD)
-      add(named(item[1]), inner ? inner[2] : item[2])
+      add(inner ? `${lastItem}: ${inner[1]}` : lastItem, inner ? inner[2] : item[2])
+      continue
+    }
+
+    // Строка-продолжение пункта: `**Ответ:**` под `1. **Вопрос:**`.
+    const nested = line.match(NESTED_FIELD)
+    if (nested) {
+      add(lastItem ? `${lastItem}: ${nested[1]}` : nested[1], nested[2])
       continue
     }
 
     const lead = line.match(LEAD_IN)
-    if (lead) label = lead[1].replace(/[\s:]+$/, '')
+    if (lead) {
+      label = lead[1].replace(/[\s:]+$/, '')
+      lastItem = ''
+    }
   }
   closeTable()
 
