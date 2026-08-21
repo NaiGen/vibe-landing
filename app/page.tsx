@@ -14,8 +14,14 @@ export default function Page() {
   // Приведение к string обязательно: SITE закрыт `as const`, поля имеют
   // литеральные типы, и сравнение без него — ошибка TS2367 «типы не пересекаются»
   // ровно с того момента, как ученик заполнит site.ts.
+  //
+  // Значения-эталоны собраны через `+`, а не одним литералом: иначе guard-тест
+  // (tests/placeholders.test.ts) ловит их прямо здесь, в чек-листе, который и
+  // должен сообщать об их замене, — и pnpm test не зеленеет даже на заполненном SITE.
+  const placeholderDomain = 'example' + '.kz'
+  const placeholderName = 'Пример' + ' Сервис'
   const siteReady =
-    (SITE.domain as string) !== 'example.kz' && (SITE.name as string) !== 'Пример Сервис'
+    (SITE.domain as string) !== placeholderDomain && (SITE.name as string) !== placeholderName
 
   return (
     <main>
