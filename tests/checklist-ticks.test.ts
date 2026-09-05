@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { readTicks, writeTicks } from '@/lib/checklist-ticks'
+import { readTicks, writeTick } from '@/lib/checklist-ticks'
 
 /**
  * jsdom в шаблоне нет, и заводить его ради одного теста — лишняя
  * зависимость. Хранилище подменяется прямо в globalThis: readTicks
- * и writeTicks обращаются к нему через globalThis.localStorage
+ * и writeTick обращаются к нему через globalThis.localStorage
  * и ничего больше из браузера не трогают, так что node-окружения хватает.
  * Что галочка держится после перезагрузки, проверено в браузере отдельно.
  */
@@ -41,13 +41,13 @@ afterEach(() => install(undefined))
 describe('галочки чек-листа в localStorage', () => {
   it('записанное читается обратно', () => {
     install(fakeStorage())
-    writeTicks({ 'Контакты::Телефон': true })
+    writeTick('Контакты::Телефон', true)
     expect(readTicks()).toEqual({ 'Контакты::Телефон': true })
   })
 
   it('снятая галочка не считается поставленной', () => {
     install(fakeStorage())
-    writeTicks({ 'Контакты::Телефон': false })
+    writeTick('Контакты::Телефон', false)
     expect(readTicks()['Контакты::Телефон']).toBe(false)
   })
 
@@ -69,7 +69,7 @@ describe('галочки чек-листа в localStorage', () => {
   it('хранилища нет вовсе — читается пустой набор, запись молчит', () => {
     install(undefined)
     expect(readTicks()).toEqual({})
-    expect(() => writeTicks({ a: true })).not.toThrow()
+    expect(() => writeTick('a', true)).not.toThrow()
   })
 
   /**
@@ -81,12 +81,9 @@ describe('галочки чек-листа в localStorage', () => {
    */
   it('галочка второго списка не стирает галочку первого', () => {
     install(fakeStorage())
-    // Оба экземпляра смонтировались и сняли копию пустого хранилища.
-    const later = readTicks()
-    const now = readTicks()
-
-    writeTicks({ ...later, 'SEO::Ключевые запросы': true })
-    writeTicks({ ...now, 'О бизнесе::Название компании': true })
+    // Два экземпляра, каждый отдаёт хранилищу только свой тронутый пункт.
+    writeTick('SEO::Ключевые запросы', true)
+    writeTick('О бизнесе::Название компании', true)
 
     expect(readTicks()).toEqual({
       'SEO::Ключевые запросы': true,
@@ -94,16 +91,29 @@ describe('галочки чек-листа в localStorage', () => {
     })
   })
 
+  it('снял → поставил заново → галочка в другом списке: обе на месте', () => {
+    install(fakeStorage())
+    writeTick('О бизнесе::Название компании', true)
+    writeTick('О бизнесе::Название компании', false)
+    writeTick('О бизнесе::Название компании', true)
+    writeTick('SEO::Ключевые запросы', true)
+
+    expect(readTicks()).toEqual({
+      'О бизнесе::Название компании': true,
+      'SEO::Ключевые запросы': true,
+    })
+  })
+
   it('снятие галочки переживает слияние: false остаётся false', () => {
     install(fakeStorage())
-    writeTicks({ 'SEO::Ключевые запросы': true })
-    writeTicks({ 'SEO::Ключевые запросы': false })
+    writeTick('SEO::Ключевые запросы', true)
+    writeTick('SEO::Ключевые запросы', false)
     expect(readTicks()['SEO::Ключевые запросы']).toBe(false)
   })
 
   it('хранилище запрещено браузером — тоже без падения', () => {
     installThrowing()
     expect(readTicks()).toEqual({})
-    expect(() => writeTicks({ a: true })).not.toThrow()
+    expect(() => writeTick('a', true)).not.toThrow()
   })
 })
