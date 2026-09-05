@@ -85,7 +85,10 @@ export function parseBrief(text: string): BriefSection[] {
       }
       if (table.stage === 'head') continue
       table.rows += 1
-      // Строка заполнена, если непуста хоть одна ячейка.
+      // Строка заполнена, если непуста хоть одна ячейка. По ячейкам НЕ считаем
+      // намеренно: у услуги цена необязательна, и построчный счёт объявил бы
+      // «неполной» нормально заполненную строку. Строка как неделимая единица —
+      // то, на чём стоят check-brief, brand-init и счёт штук в чек-листе.
       add(table.name ? `${table.name} №${table.rows}` : `строка ${table.rows}`, cells.join(''))
       continue
     }
