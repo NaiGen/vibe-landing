@@ -19,7 +19,7 @@ export function TestLeadButton() {
       const response = await fetch('/api/lead', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: TEST_LEAD.name, phone: '+77001234567', source: 'чек-лист' }),
+        body: JSON.stringify({ name: TEST_LEAD.name, phone: '+77001234567', source: 'checklist' }),
       })
       const data = await response.json()
       setResult(
