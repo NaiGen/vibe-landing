@@ -26,8 +26,7 @@
       "Bash(git commit:*)",
       "Bash(git push:*)",
       "Bash(curl *localhost:*)",
-      "Bash(curl https://*)",
-      "Bash(npx vercel:*)"
+      "Bash(curl *https://*)"
     ]
   },
   "hooks": {
