@@ -1,7 +1,12 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-export type BriefSection = { name: string; filled: string[]; empty: string[] }
+/** Единица подсчёта в порядке документа. */
+export type BriefField = { name: string; filled: boolean }
+
+/** `filled`/`empty` — имена двумя списками (на них стоит `check-brief`);
+ *  `fields` — те же единицы в порядке брифа, каким его видит человек. */
+export type BriefSection = { name: string; filled: string[]; empty: string[]; fields: BriefField[] }
 
 /** Поле брифа: `- **Название:** значение`. Двоеточие ВНУТРИ жирного — обязательно. */
 const FIELD = /^-\s\*\*(.+?):\*\*\s*(.*)$/
@@ -44,7 +49,9 @@ export function parseBrief(text: string): BriefSection[] {
 
   function add(name: string, value: string): void {
     if (!current) return
-    if (value.trim()) current.filled.push(name)
+    const isFilled = Boolean(value.trim())
+    current.fields.push({ name, filled: isFilled })
+    if (isFilled) current.filled.push(name)
     else current.empty.push(name)
   }
 
@@ -65,7 +72,7 @@ export function parseBrief(text: string): BriefSection[] {
     const heading = line.match(SECTION)
     if (heading) {
       closeTable()
-      current = { name: heading[1].trim(), filled: [], empty: [] }
+      current = { name: heading[1].trim(), filled: [], empty: [], fields: [] }
       sections.push(current)
       label = ''
       lastItem = ''

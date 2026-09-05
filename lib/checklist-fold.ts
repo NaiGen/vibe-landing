@@ -86,8 +86,10 @@ export function foldSection(section: BriefSection): ChecklistGroup {
     drafts.set(label, draft)
   }
 
-  for (const field of section.filled) put(field, true)
-  for (const field of section.empty) put(field, false)
+  // По `fields`, а не по `filled` + `empty`: те два списка дали бы порядок
+  // «сначала заполненное», и список переставлялся бы после каждого захода
+  // `/start`. Порядок пунктов — порядок брифа.
+  for (const field of section.fields) put(field.name, field.filled)
 
   const items = [...drafts.values()].map((draft) => ({
     id: `${name}::${draft.label}`,
