@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { onLeadModalOpen } from '@/components/lead/modal-controller'
+import { LeadFormBoundary } from '@/components/lead/lead-form-boundary'
 import { LEAD_MODAL } from '@/lib/content/lead'
 
 function LeadFormLoading() {
@@ -38,7 +39,9 @@ export function LeadModal() {
         <DialogHeader>
           <DialogTitle>Оставьте заявку</DialogTitle>
         </DialogHeader>
-        <LeadForm source={source} onSuccess={() => setOpen(false)} />
+        <LeadFormBoundary fallback={<p role="alert">{LEAD_MODAL.loadFailed}</p>}>
+          <LeadForm source={source} onSuccess={() => setOpen(false)} />
+        </LeadFormBoundary>
       </DialogContent>
     </Dialog>
   )
