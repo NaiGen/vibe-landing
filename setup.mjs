@@ -3,7 +3,7 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { createInterface } from 'node:readline/promises'
 import { stdin, stdout } from 'node:process'
 import { PLACEHOLDER } from './lib/placeholders.ts'
-import { formatKzPhoneDisplay, normalizeKzPhone } from './lib/phone.ts'
+import { formatPhoneDisplay, parsePhone } from './lib/phone.ts'
 
 /**
  * Первичная настройка. Делает то же, что сделала бы модель,
@@ -72,14 +72,15 @@ if (answers.domain) {
 }
 
 if (answers.phone) {
-  const display = formatKzPhoneDisplay(answers.phone)
-  const raw = normalizeKzPhone(answers.phone)
+  const parsed = parsePhone(answers.phone)
 
-  if (display && raw) {
+  if (parsed.ok) {
+    const raw = parsed.e164
+    const display = formatPhoneDisplay(raw)
     site = site.replaceAll(PLACEHOLDER.phoneDisplay, display).replaceAll(`+${PLACEHOLDER.whatsapp}`, raw)
     site = site.replaceAll(`number: '${PLACEHOLDER.whatsapp}'`, `number: '${raw.slice(1)}'`)
   } else {
-    console.log('\n⚠️  Не разобрал номер как казахстанский — телефон в lib/site.ts не тронут, поправь вручную.\n')
+    console.log('\n⚠️  Не разобрал номер как номер зоны +7 — телефон в lib/site.ts не тронут, поправь вручную.\n')
   }
 }
 

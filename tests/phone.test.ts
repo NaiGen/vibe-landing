@@ -1,66 +1,57 @@
 import { describe, expect, it } from 'vitest'
-import { formatKzPhoneDisplay, maskKzPhone, normalizeKzPhone } from '@/lib/phone'
+import { formatPhoneDisplay, parsePhone } from '@/lib/phone'
 
-describe('maskKzPhone', () => {
-  it('форматирует по мере ввода', () => {
-    expect(maskKzPhone('7')).toBe('+7')
-    expect(maskKzPhone('7700')).toBe('+7 (700')
-    expect(maskKzPhone('77001234567')).toBe('+7 (700) 123-45-67')
+describe('parsePhone — один номер во всех привычных записях', () => {
+  it.each([
+    '+7 700 123 45 67',
+    '+7 (700) 123-45-67',
+    '+77001234567',
+    '8 700 123 45 67',
+    '87001234567',
+    '7 700 123 45 67',
+    '77001234567',
+    '700 123 45 67',
+    '7001234567',
+  ])('«%s» → +77001234567', (input) => {
+    expect(parsePhone(input)).toEqual({ ok: true, e164: '+77001234567' })
   })
 
-  it('игнорирует лишние символы и обрезает длину', () => {
-    expect(maskKzPhone('+7 (700) 123-45-67abc')).toBe('+7 (700) 123-45-67')
-    expect(maskKzPhone('770012345678888')).toBe('+7 (700) 123-45-67')
-  })
-
-  it('подставляет 7 вместо ведущей 8', () => {
-    expect(maskKzPhone('87001234567')).toBe('+7 (700) 123-45-67')
-  })
-
-  it('пустая строка остаётся пустой', () => {
-    expect(maskKzPhone('')).toBe('')
-  })
-
-  it('позволяет стереть код города: backspace не зацикливается', () => {
-    // Пользователь стирает по символу. Каждый шаг обязан менять результат,
-    // иначе поле «залипает» и номер нельзя исправить.
-    let value = maskKzPhone('77001234567')
-    const seen = new Set<string>()
-
-    while (value !== '') {
-      expect(seen.has(value), `маска зациклилась на "${value}"`).toBe(false)
-      seen.add(value)
-      value = maskKzPhone(value.slice(0, -1))
-    }
+  // Зона +7 общая с Россией: мобильный без восьмёрки — те же 10 цифр.
+  it('российский мобильный без восьмёрки', () => {
+    expect(parsePhone('912 345 67 89')).toEqual({ ok: true, e164: '+79123456789' })
   })
 })
 
-describe('normalizeKzPhone', () => {
-  it('приводит любой валидный ввод к E.164', () => {
-    expect(normalizeKzPhone('+7 (700) 123-45-67')).toBe('+77001234567')
-    expect(normalizeKzPhone('8 700 123 45 67')).toBe('+77001234567')
-    expect(normalizeKzPhone('77001234567')).toBe('+77001234567')
-  })
-
-  it('отвергает короткий номер', () => {
-    expect(normalizeKzPhone('7700123')).toBeNull()
-  })
-
-  it('отвергает не казахстанский код', () => {
-    expect(normalizeKzPhone('+1 202 555 0100')).toBeNull()
+describe('parsePhone — причина отказа', () => {
+  it.each([
+    ['', 'empty'],
+    ['abc', 'empty'],
+    ['+', 'empty'],
+    ['7700123', 'short'],
+    ['+7', 'short'],
+    // 8 и девять цифр — недобрали, а не городской без восьмёрки.
+    ['8 700 123 45 6', 'short'],
+    ['770012345678', 'long'],
+    // Лишняя цифра — ошибка, а не молчаливое обрезание.
+    ['+7 7001 234 56 78', 'long'],
+    ['+1 202 555 0100', 'format'],
+    ['+996 555 11 22 33', 'format'],
+    // 11 цифр, но не с 7 и не с 8.
+    ['91234567890', 'format'],
+  ] as const)('«%s» → %s', (input, reason) => {
+    expect(parsePhone(input)).toEqual({ ok: false, reason })
   })
 })
 
-describe('formatKzPhoneDisplay', () => {
-  it('форматирует ввод с ведущей 8', () => {
-    expect(formatKzPhoneDisplay('87051234567')).toBe('+7 705 123 45 67')
+describe('formatPhoneDisplay', () => {
+  it('приводит любую запись к одному виду', () => {
+    expect(formatPhoneDisplay('87051234567')).toBe('+7 705 123 45 67')
+    expect(formatPhoneDisplay('+7 (705) 123-45-67')).toBe('+7 705 123 45 67')
+    expect(formatPhoneDisplay('7051234567')).toBe('+7 705 123 45 67')
   })
 
-  it('форматирует ввод с +7 и пробелами', () => {
-    expect(formatKzPhoneDisplay('+7 705 123 45 67')).toBe('+7 705 123 45 67')
-  })
-
-  it('отвергает слишком короткий ввод', () => {
-    expect(formatKzPhoneDisplay('7705123')).toBeNull()
+  it('неразобранный номер не форматирует', () => {
+    expect(formatPhoneDisplay('7705123')).toBeNull()
+    expect(formatPhoneDisplay('+996 555 11 22 33')).toBeNull()
   })
 })

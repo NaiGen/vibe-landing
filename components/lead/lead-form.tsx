@@ -1,20 +1,36 @@
 'use client'
 
-import { useState, type FormEvent } from 'react'
+import { useState, type FocusEvent, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { leadSchema } from '@/lib/lead/schema'
-import { maskKzPhone } from '@/lib/phone'
+import { formatPhoneDisplay } from '@/lib/phone'
 
 type Status = 'idle' | 'sending'
+type Field = 'name' | 'phone'
+/** Ошибка формы: текст и, если она про конкретное поле, какое. */
+type FormError = { field?: Field; text: string }
+
+/** Текст ошибки показан под формой — поле только помечаем и связываем с ним. */
+const ERROR_ID = 'lead-error'
 
 export function LeadForm({ source, onSuccess }: { source?: string; onSuccess?: () => void }) {
   const router = useRouter()
   const [status, setStatus] = useState<Status>('idle')
-  const [phone, setPhone] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<FormError | null>(null)
+
+  // При уходе из поля показываем номер так, как его поняли: `+7 700 123 45 67`.
+  // Не разобрали — оставляем как набрано; причину скажем при отправке.
+  function tidyPhone(event: FocusEvent<HTMLInputElement>) {
+    const text = formatPhoneDisplay(event.target.value)
+    if (text) event.target.value = text
+  }
+
+  function invalid(field: Field) {
+    return error?.field === field ? { 'aria-invalid': true, 'aria-describedby': ERROR_ID } : {}
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -32,7 +48,12 @@ export function LeadForm({ source, onSuccess }: { source?: string; onSuccess?: (
     // Проверяем на клиенте — чтобы ошибка показалась сразу, без запроса.
     const parsed = leadSchema.safeParse(payload)
     if (!parsed.success) {
-      setError(parsed.error.issues[0]?.message ?? 'Проверьте поля формы')
+      const issue = parsed.error.issues[0]
+      const field = issue?.path[0]
+      setError({
+        field: field === 'name' || field === 'phone' ? field : undefined,
+        text: issue?.message ?? 'Проверьте поля формы',
+      })
       return
     }
 
@@ -46,7 +67,7 @@ export function LeadForm({ source, onSuccess }: { source?: string; onSuccess?: (
       const result = await response.json()
 
       if (!response.ok || !result.ok) {
-        setError(result.error ?? 'Не удалось отправить. Попробуйте ещё раз.')
+        setError({ text: result.error ?? 'Не удалось отправить. Попробуйте ещё раз.' })
         return
       }
 
@@ -54,7 +75,7 @@ export function LeadForm({ source, onSuccess }: { source?: string; onSuccess?: (
       onSuccess?.()
       router.push('/spasibo')
     } catch {
-      setError('Нет связи с сервером. Проверьте интернет.')
+      setError({ text: 'Нет связи с сервером. Проверьте интернет.' })
     } finally {
       setStatus('idle')
     }
@@ -74,7 +95,7 @@ export function LeadForm({ source, onSuccess }: { source?: string; onSuccess?: (
 
       <div>
         <Label htmlFor="lead-name">Имя</Label>
-        <Input id="lead-name" name="name" required autoComplete="name" />
+        <Input id="lead-name" name="name" required autoComplete="name" {...invalid('name')} />
       </div>
 
       <div>
@@ -82,12 +103,15 @@ export function LeadForm({ source, onSuccess }: { source?: string; onSuccess?: (
         <Input
           id="lead-phone"
           name="phone"
+          type="tel"
           inputMode="tel"
           autoComplete="tel"
           required
-          value={phone}
-          onChange={(event) => setPhone(maskKzPhone(event.target.value))}
-          placeholder="+7 (700) 000-00-00"
+          onBlur={tidyPhone}
+          // Формат номера, а не текст: переводить нечего. Не заглушка телефона
+          // из lib/placeholders.ts — иначе guard-тест не позеленеет никогда.
+          placeholder="+7 701 234 56 78"
+          {...invalid('phone')}
         />
       </div>
 
@@ -96,7 +120,11 @@ export function LeadForm({ source, onSuccess }: { source?: string; onSuccess?: (
         <Input id="lead-comment" name="comment" />
       </div>
 
-      {error && <p role="alert">{error}</p>}
+      {error && (
+        <p id={ERROR_ID} role="alert">
+          {error.text}
+        </p>
+      )}
 
       <Button type="submit" disabled={status === 'sending'}>
         {status === 'sending' ? 'Отправляем…' : 'Отправить заявку'}
