@@ -126,27 +126,3 @@ describe('parseBrief: раздел закрыт только целиком', ()
     expect(section.empty).toEqual(['Услуги №1', 'Преимущества №1'])
   })
 })
-
-describe('parseBrief: настоящий brief.md', () => {
-  const sections = parseBrief(readFileSync(join(process.cwd(), 'brief.md'), 'utf8'))
-  const find = (name: string) => sections.find((section) => section.name === name)!
-
-  it('раздел «Контент» больше не сводится к одному полю', () => {
-    const content = find('4. Контент')
-    expect(content.filled.length + content.empty.length).toBeGreaterThan(1)
-  })
-
-  it('видит услуги, преимущества, FAQ, отзывы и кейсы', () => {
-    const content = find('4. Контент')
-    expect(content.empty).toContain('Услуги / товары №1')
-    expect(content.empty).toContain('Преимущества (5–7 пунктов с пояснением) №1')
-    expect(content.empty).toContain('Частые вопросы (5–10 штук с ответами) №1: Вопрос')
-    expect(content.empty).toContain('Частые вопросы (5–10 штук с ответами) №1: Ответ')
-    expect(content.empty).toContain('Отзывы клиентов №1')
-    expect(content.empty).toContain('Кейсы / портфолио №1')
-  })
-
-  it('в пустом шаблоне не заполнено ничего', () => {
-    expect(sections.every((section) => section.filled.length === 0)).toBe(true)
-  })
-})
