@@ -26,10 +26,14 @@ export function ChecklistGroups({ groups }: { groups: ChecklistGroup[] }) {
   // сервера и клиента разошлись бы, и React перерисовал бы дерево целиком.
   useEffect(() => setTicks(readTicks()), [])
 
+  // Списков на экране два — «собрать сейчас» и «перед запуском», — и у
+  // каждого своя копия `ticks`. Чужие ключи в ней устаревшие, поэтому
+  // хранилищу отдаётся ТОЛЬКО тронутый пункт: `writeTicks` сливает его
+  // с тем, что уже лежит. Отдать `next` целиком значило бы стереть
+  // галочку соседнего списка (см. `lib/checklist-ticks.ts`).
   function toggle(id: string, on: boolean): void {
-    const next = { ...ticks, [id]: on }
-    setTicks(next)
-    writeTicks(next)
+    setTicks({ ...ticks, [id]: on })
+    writeTicks({ [id]: on })
   }
 
   return (
