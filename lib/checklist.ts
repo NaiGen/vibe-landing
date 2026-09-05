@@ -16,7 +16,20 @@ import { parseBrief, type BriefSection } from '@/lib/brief'
  * Точный счёт остаётся за `pnpm check-brief`; здесь — пометка для себя.
  */
 
-export type ChecklistItem = { id: string; label: string; done: boolean }
+export type ChecklistItem = {
+  id: string
+  label: string
+  /**
+   * Отмечен и заблокирован. Только у одиночного поля `- **Поле:**`:
+   * у него «заполнено» — бинарный факт парсера, а не догадка.
+   */
+  done: boolean
+  /**
+   * Свёрнутый пункт: сколько единиц под меткой уже заполнено. У одиночного
+   * поля всегда 0 — там всё сказано в `done`.
+   */
+  inBrief: number
+}
 export type ChecklistGroup = { name: string; items: ChecklistItem[] }
 /** `now` — собирать сейчас, `later` — Блок Б, перед запуском. */
 export type Checklist = { now: ChecklistGroup[]; later: ChecklistGroup[] }
@@ -58,28 +71,50 @@ function laterSections(text: string): Set<string> {
   return names
 }
 
+/** Черновик пункта: свёрнут ли он и сколько единиц под меткой заполнено. */
+type Draft = { label: string; folded: boolean; filled: number }
+
 /**
- * Раздел брифа → группа чек-листа. Пункт считается собранным, если
- * заполнена ХОТЯ БЫ ОДНА единица под его меткой. Требовать все — значит
- * держать галочку снятой из-за заготовки: бриф печатает три пустые строки
- * под «Преимущества» не потому, что их обязано быть три, а чтобы было
- * куда писать. Назвал два преимущества — материал собран.
+ * Раздел брифа → группа чек-листа.
+ *
+ * Сам отмечается ТОЛЬКО одиночный пункт — тот, что вырос из одного поля
+ * `- **Поле:**`. У свёрнутого «заполнено» вывести нельзя, любое правило
+ * врёт в одну из сторон: «хотя бы одна единица» гасит FAQ, у которого
+ * есть вопрос и нет ответа, — а правило 8 требует ответы прямо в HTML;
+ * «все единицы» держит галочку снятой у того, кто принёс два отзыва
+ * в три заготовленные строки, хотя пустые строки — заготовка, а не
+ * обязательный минимум.
+ *
+ * Поэтому у свёрнутого пункта галочка живая, а рядом стоит `inBrief` —
+ * сколько единиц уже записано. Ставит её человек, для того чек-лист
+ * и нужен; точный счёт по-прежнему за `pnpm check-brief`.
  */
 function foldSection(section: BriefSection): ChecklistGroup {
   const name = clean(section.name.replace(NUMBER, ''))
-  const items = new Map<string, ChecklistItem>()
+  const drafts = new Map<string, Draft>()
 
-  const put = (field: string, done: boolean) => {
-    const label = clean(field.match(REPEAT)?.[1] ?? field)
-    const seen = items.get(label)
-    if (seen) seen.done ||= done
-    else items.set(label, { id: `${name}::${label}`, label, done })
+  const put = (field: string, filled: boolean) => {
+    const repeat = field.match(REPEAT)
+    const label = clean(repeat?.[1] ?? field)
+    const draft = drafts.get(label) ?? { label, folded: false, filled: 0 }
+    // Метка, встретившаяся хоть раз с номером, свёрнута навсегда: одиночным
+    // считается только то, что нигде не пронумеровано.
+    draft.folded ||= repeat !== null
+    draft.filled += filled ? 1 : 0
+    drafts.set(label, draft)
   }
 
   for (const field of section.filled) put(field, true)
   for (const field of section.empty) put(field, false)
 
-  return { name, items: [...items.values()] }
+  const items = [...drafts.values()].map((draft) => ({
+    id: `${name}::${draft.label}`,
+    label: draft.label,
+    done: !draft.folded && draft.filled > 0,
+    inBrief: draft.folded ? draft.filled : 0,
+  }))
+
+  return { name, items }
 }
 
 /**

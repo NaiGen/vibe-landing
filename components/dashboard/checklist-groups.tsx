@@ -11,9 +11,12 @@ import { DASHBOARD } from '@/lib/content/dashboard'
  * `onboarding-panel.tsx`: отступы, размер чекбокса и приглушённая
  * подпись у уже записанного. Ни цветов, ни новых токенов.
  *
- * Пункт, заполненный в брифе, отмечен и заблокирован: данные пришли,
- * собирать нечего. Пустой — живой чекбокс «я это собрал», его состояние
- * лежит в localStorage (`lib/checklist-ticks.ts`).
+ * Одиночное поле, заполненное в брифе, отмечено и заблокировано: данные
+ * пришли, собирать нечего. Всё остальное — живой чекбокс «я это собрал»,
+ * его состояние лежит в localStorage (`lib/checklist-ticks.ts`).
+ * У свёрнутого пункта рядом стоит, сколько единиц уже записано: сам он
+ * не отмечается, потому что «сколько нужно» знает только человек —
+ * см. `foldSection` в `lib/checklist.ts`.
  */
 export function ChecklistGroups({ groups }: { groups: ChecklistGroup[] }) {
   const [ticks, setTicks] = useState<Ticks>({})
@@ -47,7 +50,10 @@ export function ChecklistGroups({ groups }: { groups: ChecklistGroup[] }) {
                   />
                   <span className={item.done ? 'opacity-60' : undefined}>
                     {item.label}
-                    {item.done ? <span className="text-sm"> — {DASHBOARD.fromBrief}</span> : null}
+                    {item.done ? <span className="text-sm">{DASHBOARD.fromBrief}</span> : null}
+                    {item.inBrief > 0 ? (
+                      <span className="text-sm opacity-70">{DASHBOARD.inBrief(item.inBrief)}</span>
+                    ) : null}
                   </span>
                 </label>
               </li>
