@@ -1,35 +1,34 @@
 'use client'
 
-import { useState, type FocusEvent, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { PhoneField } from '@/components/lead/phone-field'
 import { leadSchema } from '@/lib/lead/schema'
-import { formatPhoneDisplay } from '@/lib/phone'
 
 type Status = 'idle' | 'sending'
 type Field = 'name' | 'phone'
 /** Ошибка формы: текст и, если она про конкретное поле, какое. */
 type FormError = { field?: Field; text: string }
 
-/** Текст ошибки показан под формой — поле только помечаем и связываем с ним. */
+/** Текст ошибки показан под своим полем или под формой — поле только помечаем и связываем с ним. */
 const ERROR_ID = 'lead-error'
 
 export function LeadForm({ source, onSuccess }: { source?: string; onSuccess?: () => void }) {
   const router = useRouter()
   const [status, setStatus] = useState<Status>('idle')
   const [error, setError] = useState<FormError | null>(null)
-
-  // При уходе из поля показываем номер так, как его поняли: `+7 700 123 45 67`.
-  // Не разобрали — оставляем как набрано; причину скажем при отправке.
-  function tidyPhone(event: FocusEvent<HTMLInputElement>) {
-    const text = formatPhoneDisplay(event.target.value)
-    if (text) event.target.value = text
-  }
+  const [phone, setPhone] = useState('')
 
   function invalid(field: Field) {
     return error?.field === field ? { 'aria-invalid': true, 'aria-describedby': ERROR_ID } : {}
+  }
+
+  function fieldError(field: Field) {
+    return error?.field === field ? <p id={ERROR_ID} role="alert">{error.text}</p> : null
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -39,7 +38,9 @@ export function LeadForm({ source, onSuccess }: { source?: string; onSuccess?: (
     const data = new FormData(event.currentTarget)
     const payload = {
       name: String(data.get('name') ?? ''),
-      phone: String(data.get('phone') ?? ''),
+      // В поле лежит форматированная строка для показа — наружу нужен E.164
+      // из состояния формы, а не то, что лежит в самом <input>.
+      phone,
       comment: String(data.get('comment') ?? ''),
       website: String(data.get('website') ?? ''),
       source,
@@ -95,32 +96,40 @@ export function LeadForm({ source, onSuccess }: { source?: string; onSuccess?: (
 
       <div>
         <Label htmlFor="lead-name">Имя</Label>
-        <Input id="lead-name" name="name" required autoComplete="name" {...invalid('name')} />
+        <Input
+          id="lead-name"
+          name="name"
+          required
+          autoComplete="name"
+          onChange={() => {
+            if (error?.field === 'name') setError(null)
+          }}
+          {...invalid('name')}
+        />
+        {fieldError('name')}
       </div>
 
       <div>
         <Label htmlFor="lead-phone">Телефон</Label>
-        <Input
+        <PhoneField
           id="lead-phone"
-          name="phone"
-          type="tel"
-          inputMode="tel"
-          autoComplete="tel"
-          required
-          onBlur={tidyPhone}
-          // Формат номера, а не текст: переводить нечего. Не заглушка телефона
-          // из lib/placeholders.ts — иначе guard-тест не позеленеет никогда.
-          placeholder="+7 701 234 56 78"
-          {...invalid('phone')}
+          value={phone}
+          onChange={(next) => {
+            setPhone(next)
+            if (error?.field === 'phone') setError(null)
+          }}
+          invalid={error?.field === 'phone'}
+          describedBy={ERROR_ID}
         />
+        {fieldError('phone')}
       </div>
 
       <div>
         <Label htmlFor="lead-comment">Комментарий</Label>
-        <Input id="lead-comment" name="comment" />
+        <Textarea id="lead-comment" name="comment" rows={3} />
       </div>
 
-      {error && (
+      {error && !error.field && (
         <p id={ERROR_ID} role="alert">
           {error.text}
         </p>

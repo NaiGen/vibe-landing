@@ -24,13 +24,19 @@ describe('leadSchema', () => {
     expect(leadSchema.parse({ name: 'Иван', phone: '7001234567' }).phone).toBe('+77001234567')
   })
 
-  it('иностранный код — ошибка формата, по решению владельца', () => {
-    expect(message({ name: 'Иван', phone: '+996 555 11 22 33' })).toBe(PHONE_ERRORS.format)
+  // Решение владельца, пересмотренное им же: номер любой страны с плюсом
+  // принимается, Казахстан — страна по умолчанию, а не ограничение.
+  it('иностранный номер с плюсом принимается', () => {
+    expect(leadSchema.parse({ name: 'Иван', phone: '+996 555 112233' }).phone).toBe('+996555112233')
   })
 
   // Форма многостраничника переводит причину сама — ей нужен код, не текст.
+  // Не «770012345678» (11 лишних цифр вместо 10 положенных): справочник
+  // считает это неизвестной длиной для всех стран зоны +7 и даёт format,
+  // а не long — настоящий long только на числах, невозможных ни для одной
+  // страны в принципе.
   it('причина ошибки телефона едет в params', () => {
-    const result = leadSchema.safeParse({ name: 'Иван', phone: '770012345678' })
+    const result = leadSchema.safeParse({ name: 'Иван', phone: '700123456789012345' })
     const issue = result.success ? undefined : result.error.issues[0]
     expect(issue?.code === 'custom' ? issue.params?.reason : undefined).toBe('long')
     expect(issue?.message).toBe(PHONE_ERRORS.long)
@@ -45,7 +51,7 @@ describe('leadSchema', () => {
   // Свои сообщения важнее локали: их видит человек в форме.
   it('свои сообщения не перебиты локалью zod', () => {
     expect(message({ name: 'И', phone: '+77001234567' })).toBe('Укажите имя')
-    expect(message({ name: 'Иван', phone: '123' })).toBe('В номере не хватает цифр: после +7 их должно быть 10')
+    expect(message({ name: 'Иван', phone: '123' })).toBe('В номере не хватает цифр')
   })
 
   // Всё, что zod формулирует сам, по умолчанию по-английски,
